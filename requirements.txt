@@ -2,3 +2,7 @@ streamlit>=1.28
 neo4j>=5.14
 pyvis>=0.3.2
 pydantic>=2.5
+
+fastapi>=0.104
+uvicorn>=0.24
+python-dotenv>=1.0
