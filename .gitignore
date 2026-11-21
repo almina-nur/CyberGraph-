@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Sanal ortamlar
+.venv/
+venv/
+env/
+
+# Test ve coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Proje verileri (buyuk ham veri repoda tutulmaz)
+data/samples/enterprise-attack.json
+data/samples/attack_entities.json
+data/processed/
+*.pkl
+
+# Secret ve config
+.env
+*.env
+configs/local_*
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Notebook kontrol noktalari
+.ipynb_checkpoints/
