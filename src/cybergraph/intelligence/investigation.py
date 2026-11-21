@@ -76,9 +76,17 @@ class ThreatInvestigationService:
                     malware_keys.append(rel.target_key)
                     malware_labels.append(f"{rel.target_name} ({rel.target_key})")
 
+        seen_sources: dict[str, Optional[str]] = {}
         for m_key in malware_keys[:5]:
             for inc in self.query_service.get_incoming_relationships(m_key, limit=25):
-                if inc.source_type == "intrusion-set":
+                src_type = getattr(inc, "source_type", None)
+                if src_type is None and inc.source_key:
+                    if inc.source_key not in seen_sources:
+                        src_ent = self.query_service.get_entity(inc.source_key)
+                        seen_sources[inc.source_key] = getattr(src_ent, "type", None) if src_ent else None
+                    src_type = seen_sources[inc.source_key]
+
+                if src_type == "intrusion-set":
                     label = f"{inc.source_name} ({inc.source_key})"
                     if label not in actor_labels:
                         actor_labels.append(label)
