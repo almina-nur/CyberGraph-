@@ -18,7 +18,7 @@ REPORTS_DIR = ROOT / "reports"
 
 SAMPLE_BENCHMARK = [
     {
-        "id": "case_01",
+        "id": "case_01_actor_malware_tech",
         "text": (
             "APT29 utilized Cobalt Strike and PowerShell while communicating with "
             "hxxp://malicious-domain[.]example[.]com and 185.220.101.4."
@@ -26,12 +26,28 @@ SAMPLE_BENCHMARK = [
         "expected_attack_keys": ["G0016", "S0154", "T1059.001"],
     },
     {
-        "id": "case_02",
+        "id": "case_02_discovery_tools_cve",
         "text": (
             "Adversaries leveraged BloodHound and AdFind to enumerate directory "
             "structures and exploit CVE-2023-23397."
         ),
         "expected_attack_keys": ["S0521", "S0552"],
+    },
+    {
+        "id": "case_03_aliases_and_subtechniques",
+        "text": (
+            "The Dukes operated alongside Cozy Bear, dumping LSA Secrets and "
+            "transferring payloads via Ingress Tool Transfer."
+        ),
+        "expected_attack_keys": ["G0016", "T1003.004", "T1105"],
+    },
+    {
+        "id": "case_04_ioc_only_no_attack_entity",
+        "text": (
+            "Firewall logs flagged outbound connections to 203.0.113.45 and "
+            "hxxps://update[.]example[.]net/check with CVE-2024-21626."
+        ),
+        "expected_attack_keys": [],
     },
 ]
 
@@ -67,13 +83,15 @@ def main() -> None:
                 "predicted_keys": pred_keys,
                 "expected_keys": item["expected_attack_keys"],
                 "indicator_count": len(extracted["indicators"]),
+                "true_positives": metrics.true_positives,
+                "false_positives": metrics.false_positives,
+                "false_negatives": metrics.false_negatives,
                 "precision": metrics.precision,
                 "recall": metrics.recall,
                 "f1": metrics.f1,
             }
         )
 
-    # Ornek Top-K siralama kontrolu (sabit ornek liste uzerinde)
     sample_topk = evaluate_top_k(
         ranked_keys=["S0154", "T1059.001", "S0037", "S0049", "S0050"],
         relevant_keys=["S0154", "T1059.001"],
