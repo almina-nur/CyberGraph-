@@ -60,6 +60,24 @@ class ThreatInvestigationService:
                 return item
         return None
 
+    def _resolve_source_type(self, rel, seen_sources: dict[str, Optional[str]]) -> Optional[str]:
+        direct_type = getattr(rel, "source_type", None)
+        if direct_type:
+            return direct_type
+
+        src_key = getattr(rel, "source_key", None)
+        if not src_key:
+            return None
+
+        if src_key not in seen_sources:
+            entity = self.query_service.get_entity(src_key)
+            resolved = getattr(entity, "type", None) if entity is not None else None
+            if resolved is None and src_key.startswith("G") and src_key[1:].isdigit():
+                resolved = "intrusion-set"
+            seen_sources[src_key] = resolved
+
+        return seen_sources[src_key]
+
     def _build_chain_for_indicator(self, indicator: ExtractedEntity) -> Optional[ChainHopSummary]:
         ioc_node = self._find_matching_ioc_node(indicator)
         if not ioc_node:
