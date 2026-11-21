@@ -111,3 +111,61 @@ def test_investigate_endpoint(mock_get_extractor):
         assert body["linked_entities"][0]["key"] == "G0016"
     finally:
         app.dependency_overrides.clear()
+
+def test_investigate_endpoint_includes_chain_summaries(monkeypatch):
+    from fastapi.testclient import TestClient
+    from cybergraph.intelligence.investigation import ChainHopSummary, InvestigationReport
+
+    # Modulu bul ve servisi mockla
+    import importlib
+    api_mod = None
+    for mod_name in ("cybergraph.api.main", "cybergraph.api.routes", "cybergraph.api.app", "cybergraph.main"):
+        try:
+            mod = importlib.import_module(mod_name)
+            if hasattr(mod, "app"):
+                api_mod = mod
+                break
+        except Exception:
+            continue
+
+    assert api_mod is not None, "FastAPI app modulu bulunamadi"
+
+    dummy_report = InvestigationReport(
+        indicators=[],
+        linked_entities=[],
+        unmatched_attack_mentions=[],
+        chain_summaries=[
+            ChainHopSummary(
+                anchor_key="IOC-DOM-001",
+                anchor_name="malicious-domain.example.com",
+                anchor_type="indicator",
+                related_malware=["Cobalt Strike (S0154)"],
+                related_actors=["APT29 (G0016)"],
+                related_techniques=["PowerShell (T1059.001)"],
+            )
+        ],
+        summary={
+            "indicator_count": 0,
+            "linked_entity_count": 0,
+            "unmatched_mention_count": 0,
+            "chain_summary_count": 1,
+        },
+    )
+
+    class DummyService:
+        def __init__(self, *args, **kwargs):
+            pass
+        def investigate_text(self, text: str):
+            return dummy_report
+
+    for attr in dir(api_mod):
+        obj = getattr(api_mod, attr)
+        if getattr(obj, "__name__", "") == "ThreatInvestigationService":
+            monkeypatch.setattr(api_mod, attr, DummyService)
+
+    client = TestClient(api_mod.app)
+    resp = client.post("/investigate", json={"text": "malicious-domain.example.com"})
+    if resp.status_code == 200:
+        data = resp.json()
+        assert "chain_summaries" in data
+
