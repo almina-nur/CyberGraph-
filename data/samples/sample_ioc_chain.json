@@ -1,0 +1,40 @@
+{
+  "entities": [
+    {
+      "key": "IOC-DOM-001",
+      "name": "malicious-domain.example.com",
+      "type": "indicator",
+      "description": "Sample C2 domain indicator used for offline analyst workflow demonstration.",
+      "external_id": "IOC-DOM-001",
+      "source": "sample-ioc-feed",
+      "confidence": "medium"
+    },
+    {
+      "key": "IOC-IP-001",
+      "name": "185.220.101.4",
+      "type": "indicator",
+      "description": "Sample indicator linked to C2 infrastructure in offline scenario.",
+      "external_id": "IOC-IP-001",
+      "source": "sample-ioc-feed",
+      "confidence": "medium"
+    }
+  ],
+  "relationships": [
+    {
+      "source_key": "IOC-DOM-001",
+      "target_key": "S0154",
+      "rel_type": "indicates",
+      "source": "sample-ioc-feed",
+      "confidence": "medium",
+      "predicted": false
+    },
+    {
+      "source_key": "IOC-IP-001",
+      "target_key": "S0154",
+      "rel_type": "indicates",
+      "source": "sample-ioc-feed",
+      "confidence": "medium",
+      "predicted": false
+    }
+  ]
+}
