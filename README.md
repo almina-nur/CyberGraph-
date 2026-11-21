@@ -1,187 +1,97 @@
-
 # CyberGraph
 
-**AI-Driven Cyber Threat Intelligence and Knowledge Graph Platform**
+AI-Driven Cyber Threat Intelligence & Knowledge Graph Platform.
 
-[![CI](https://github.com/almina-nur/CyberGraph-/actions/workflows/ci.yml/badge.svg)](https://github.com/almina-nur/CyberGraph-/actions/workflows/ci.yml)
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?style=flat-square&logo=streamlit)](https://utsamzxgrv8ftukzh2rtbt.streamlit.app)
-[![API](https://img.shields.io/badge/API-Render-46E3B7?style=flat-square&logo=render)](https://cybergraph-api.onrender.com)
-[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python)](https://python.org)
-[![Neo4j](https://img.shields.io/badge/Neo4j-AuraDB-008CC1?style=flat-square&logo=neo4j)](https://neo4j.com)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+CyberGraph aggregates cyber threat intelligence data (such as MITRE ATT&CK), structures entities and relationships in a knowledge graph, and provides query, API, visualization, and testing workflows to support threat relationship discovery and analyst investigation.
 
-CyberGraph is an AI-driven platform that ingests heterogeneous cyber threat intelligence data, normalizes it, and builds a queryable **Knowledge Graph** to uncover relationships between threat actors, malware, attack techniques, and vulnerabilities.
+## Current Core Capabilities
 
-Instead of listing isolated indicators, CyberGraph helps analysts answer questions like:
-- *Which threat actors use this malware?*
-- *What MITRE ATT&CK techniques are associated with this campaign?*
-- *What is the full attack chain from an indicator to an actor?*
+* **Threat Knowledge Graph (Neo4j):** Stores MITRE ATT&CK entities (`intrusion-set`, `malware`, `tool`, `attack-pattern`, `campaign`) and typed relationships (`uses`, `subtechnique-of`, `attributed-to`).
+* **Graph Query Service (`src/cybergraph/intelligence/queries.py`):** Supports health/statistics checks, entity search, actor profiling, and multi-hop neighborhood traversal.
+* **REST API (`backend/api/main.py`):** FastAPI endpoints for `/health`, `/search`, `/entities/{key}`, and `/entities/{key}/relationships`.
+* **Analyst Dashboard (`dashboard/app.py`):** Streamlit and Pyvis interface for searching entities, viewing threat actor profiles, and exploring graph neighborhoods.
+* **Testing & CI (`tests/`, `.github/workflows/ci.yml`):** Unit tests with `pytest` and automated GitHub Actions test execution.
+* **Deployment (`docker-compose.yml`, `backend/Dockerfile`, `dashboard/Dockerfile`, `render.yaml`):** Container and service deployment configurations.
 
----
+## Research Direction
 
-## Live Demo
+> *Can integrating heterogeneous cyber threat intelligence data into a knowledge graph improve threat relationship discovery and analyst investigation efficiency?*
 
-- **Dashboard:** [https://utsamzxgrv8ftukzh2rtbt.streamlit.app](https://utsamzxgrv8ftukzh2rtbt.streamlit.app)
-- **REST API:** [https://cybergraph-api.onrender.com](https://cybergraph-api.onrender.com)
-- **API Documentation (Swagger):** [https://cybergraph-api.onrender.com/docs](https://cybergraph-api.onrender.com/docs)
+Planned experimental tracks:
 
-The demo is connected to a live Neo4j AuraDB instance containing **1,962 entities** and **19,482 relationships** from MITRE ATT&CK.
-
----
-
-## Architecture
-
-```text
-Data Sources (MITRE ATT&CK STIX 2.1, CVE/NVD, IOC feeds)
-        |
-        v
-Ingestion & Normalization (Python, Pydantic)
-        |
-        v
-Knowledge Graph (Neo4j AuraDB)
-        |
-        v
-Query Layer (Cypher, GraphQueryService)
-        |
-        +-- FastAPI backend (REST endpoints)
-        +-- Streamlit dashboard (analyst UI)
-```
-
----
-
-## Features
-
-- **Threat Knowledge Graph**: 1,900+ entities and 19,000+ relationships from MITRE ATT&CK.
-- **Entity Search**: Fast search by name or external ID (e.g., `APT29`, `T1059`).
-- **Threat Actor Profiles**: Aggregated view of malware, tools, and techniques used by each actor.
-- **Graph Explorer**: N-hop neighborhood visualization with `pyvis`.
-- **Cypher Query Service**: Reusable query layer shared between API and dashboard.
-- **REST API**: FastAPI backend with Swagger documentation.
-- **Cloud-Deployed**: Dashboard on Streamlit Cloud, API on Render.
-- **CI/CD**: GitHub Actions pipeline with automated testing.
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Language | Python 3.10+ |
-| Data Validation | Pydantic v2 |
-| Graph Database | Neo4j AuraDB |
-| Threat Intel Data | MITRE ATT&CK (STIX 2.1) |
-| Query Layer | Cypher |
-| Dashboard | Streamlit + pyvis |
-| Backend | FastAPI |
-| Testing | pytest |
-| CI/CD | GitHub Actions |
-| Deployment | Streamlit Cloud, Render |
-
----
+1. **Entity Recognition & Linking:** Extracting and linking threat entities and indicators from threat intelligence text.
+2. **Graph-Based Relationship Analysis:** Exploring graph traversal and candidate relationships while keeping verified intelligence distinct from predicted relationships.
+3. **Threat Intelligence Retrieval:** Evaluating retrieval performance (`Precision@K`, `Recall@K`, `F1`) for analyst investigations.
 
 ## Repository Structure
 
 ```text
 CyberGraph/
-+-- backend/
-|   +-- api/
-|       +-- main.py     # FastAPI application
-+-- dashboard/          # Streamlit UI
-|   +-- app.py
-+-- src/cybergraph/
-|   +-- ingestion/      # Data download and parsing
-|   +-- normalization/  # Entity normalization
-|   +-- intelligence/   # Cypher query service
-|   +-- extraction/     # NLP entity extraction (planned)
-|   +-- analysis/       # Graph-based analysis (planned)
-|   +-- evaluation/     # Benchmarking (planned)
-+-- scripts/            # Utility scripts
-|   +-- download_data.py
-+-- tests/              # pytest test suite
-+-- .github/workflows/  # CI/CD pipelines
-+-- requirements.txt
-+-- pyproject.toml
-+-- README.md
+|-- backend/
+|   |-- api/
+|   |-- services/
+|   |-- schemas/
+|   `-- Dockerfile
+|-- src/cybergraph/
+|   |-- ingestion/
+|   |-- normalization/
+|   |-- extraction/
+|   |-- graph/
+|   |-- intelligence/
+|   |-- analysis/
+|   `-- evaluation/
+|-- dashboard/
+|   |-- app.py
+|   `-- Dockerfile
+|-- scripts/
+|   `-- download_data.py
+|-- tests/
+|-- .github/workflows/
+|   `-- ci.yml
+|-- pyproject.toml
+|-- requirements.txt
+|-- docker-compose.yml
+`-- render.yaml
+
 ```
 
----
+## Setup & Usage
 
-## Getting Started
-
-### 1. Clone and install
+### 1. Install Package and Dependencies
 
 ```bash
-git clone https://github.com/almina-nur/CyberGraph-.git
-cd CyberGraph-
+pip install -e .
 pip install -r requirements.txt
+
 ```
 
-### 2. Download data
+### 2. Environment Configuration
+
+Set the following environment variables (in `.env` or `.streamlit/secrets.toml`):
+
+```env
+NEO4J_URI=neo4j+s://<your-instance>.databases.neo4j.io
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=<your-password>
+
+```
+
+### 3. Download MITRE ATT&CK Data
 
 ```bash
 python scripts/download_data.py
+
 ```
 
-### 3. Configure Neo4j
-
-Create a Neo4j AuraDB Free instance at [console.neo4j.io](https://console.neo4j.io).
-
-Create a `.streamlit/secrets.toml` file (for the dashboard) and a `.env` file (for the API):
-
-```toml
-NEO4J_URI = "neo4j+s://<your-instance>.databases.neo4j.io"
-NEO4J_USER = "<your-instance-id>"
-NEO4J_PASSWORD = "<your-password>"
-```
-
-### 4. Run dashboard
+### 4. Run Tests, API, and Dashboard
 
 ```bash
+pytest tests/ -v
+uvicorn backend.api.main:app --host 0.0.0.0 --port 8000
 streamlit run dashboard/app.py
+
 ```
 
-### 5. Run API
+## Scope & Safety Note
 
-```bash
-uvicorn backend.api.main:app --reload
-```
-
----
-
-## Roadmap
-
-- [x] MITRE ATT&CK STIX ingestion
-- [x] Neo4j knowledge graph construction
-- [x] Cypher query service
-- [x] Streamlit dashboard (search, profiles, graph explorer)
-- [x] FastAPI REST backend
-- [x] Automated tests + CI/CD
-- [ ] NLP-based entity extraction from threat reports
-- [ ] Graph embeddings and link prediction
-- [ ] React frontend (production UI)
-
----
-
-## Data Source and License
-
-- **MITRE ATT&CK**: Data is provided under the [MITRE ATT&CK Terms of Use](https://attack.mitre.org/resources/terms-of-use/).
-- **This project**: Code is released under the MIT License. See `LICENSE`.
-
----
-
-## Author
-
-**almina-nur** — [GitHub](https://github.com/almina-nur)
-
----
-
-## Acknowledgments
-
-- [MITRE ATT&CK](https://attack.mitre.org/) for the STIX 2.1 dataset.
-- [Neo4j](https://neo4j.com/) for AuraDB Free tier.
-- [Streamlit](https://streamlit.io/) for the community cloud hosting.
-- [Render](https://render.com/) for the free API hosting.
-```
-
-### Sıradaki Adım
-Bunu GitHub'a kaydettikten sonra, projenin hem arayüzü hem de API'si canlı ve README'de görünür durumda olacak. Bir sonraki adımda **Docker** ekleyerek projeyi tamamen taşınabilir hale getirebiliriz (ki bu, büyük şirketlerin altyapı ekipleri için çok önemli bir kriterdir). Hazır olduğunda bana "Docker'a geçelim" yazabilirsin.
+This project is designed around passive, offline analysis of public threat intelligence datasets and sample data rather than active interaction with live adversary infrastructure.
