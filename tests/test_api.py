@@ -110,27 +110,11 @@ def test_investigate_endpoint(mock_get_extractor):
         assert body["summary"]["linked_entity_count"] == 1
         assert body["linked_entities"][0]["key"] == "G0016"
     finally:
-        app.dependency_overrides.clear()
-
-def test_investigate_endpoint_includes_chain_summaries(monkeypatch):
-    from fastapi.testclient import TestClient
+        app.dependency_overrides.clear()def test_investigate_endpoint_includes_chain_summaries():
     from cybergraph.intelligence.investigation import ChainHopSummary, InvestigationReport
 
-    # Modulu bul ve servisi mockla
-    import importlib
-    api_mod = None
-    for mod_name in ("cybergraph.api.main", "cybergraph.api.routes", "cybergraph.api.app", "cybergraph.main"):
-        try:
-            mod = importlib.import_module(mod_name)
-            if hasattr(mod, "app"):
-                api_mod = mod
-                break
-        except Exception:
-            continue
-
-    assert api_mod is not None, "FastAPI app modulu bulunamadi"
-
-    dummy_report = InvestigationReport(
+    mock_svc = _mock_db_service()
+    fake_report = InvestigationReport(
         indicators=[],
         linked_entities=[],
         unmatched_attack_mentions=[],
@@ -152,20 +136,18 @@ def test_investigate_endpoint_includes_chain_summaries(monkeypatch):
         },
     )
 
-    class DummyService:
-        def __init__(self, *args, **kwargs):
-            pass
-        def investigate_text(self, text: str):
-            return dummy_report
+    app.dependency_overrides[get_db_service] = lambda: mock_svc
+    try:
+        with patch(
+            "backend.api.main.ThreatInvestigationService.investigate_text",
+            return_value=fake_report,
+        ):
+            resp = client.post("/investigate", json={"text": "malicious-domain.example.com"})
+    finally:
+        app.dependency_overrides.clear()
 
-    for attr in dir(api_mod):
-        obj = getattr(api_mod, attr)
-        if getattr(obj, "__name__", "") == "ThreatInvestigationService":
-            monkeypatch.setattr(api_mod, attr, DummyService)
-
-    client = TestClient(api_mod.app)
-    resp = client.post("/investigate", json={"text": "malicious-domain.example.com"})
-    if resp.status_code == 200:
-        data = resp.json()
-        assert "chain_summaries" in data
-
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert "chain_summaries" in payload
+    assert len(payload["chain_summaries"]) == 1
+    assert payload["chain_summaries"][0]["anchor_key"] == "IOC-DOM-001"
