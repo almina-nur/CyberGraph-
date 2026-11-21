@@ -83,7 +83,9 @@ def render_graph(neighborhood: dict, height: int = 600) -> str:
     return net.generate_html()
 
 
-def merge_neighborhoods(query_svc: GraphQueryService, keys: list[str], depth: int = 1, max_nodes: int = 40) -> dict:
+def merge_neighborhoods(
+    query_svc: GraphQueryService, keys: list[str], depth: int = 1, max_nodes: int = 40
+) -> dict:
     """Birden fazla eslesen dugumun komsuluk altgraflarini birlestirir."""
     merged_nodes: dict[str, dict] = {}
     merged_edges: list[dict] = []
@@ -197,10 +199,19 @@ with tab_investigate:
         inv_service = ThreatInvestigationService(extractor=get_extractor(), query_service=svc)
         report = inv_service.investigate_text(report_text)
 
-        m1, m2, m3 = st.columns(3)
+        m1, m2, m3, m4 = st.columns(4)
         m1.metric("Indicators / CVEs", report.summary["indicator_count"])
         m2.metric("Linked Graph Entities", report.summary["linked_entity_count"])
         m3.metric("Unmatched Mentions", report.summary["unmatched_mention_count"])
+        m4.metric("IOC Chains", report.summary.get("chain_summary_count", len(report.chain_summaries)))
+
+        if report.chain_summaries:
+            st.markdown("#### Multi-Hop IOC Chain Summaries")
+            for chain in report.chain_summaries:
+                with st.expander(f"Indicator: {chain.anchor_name} ({chain.anchor_key})"):
+                    st.write("**Related Malware:**", ", ".join(chain.related_malware) or "None")
+                    st.write("**Related Actors:**", ", ".join(chain.related_actors) or "None")
+                    st.write("**Related Techniques:**", ", ".join(chain.related_techniques) or "None")
 
         st.markdown("#### Extracted Indicators & Vulnerabilities")
         if report.indicators:
