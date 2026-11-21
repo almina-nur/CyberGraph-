@@ -3,7 +3,9 @@
 
 **AI-Driven Cyber Threat Intelligence and Knowledge Graph Platform**
 
+[![CI](https://github.com/almina-nur/CyberGraph-/actions/workflows/ci.yml/badge.svg)](https://github.com/almina-nur/CyberGraph-/actions/workflows/ci.yml)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?style=flat-square&logo=streamlit)](https://utsamzxgrv8ftukzh2rtbt.streamlit.app)
+[![API](https://img.shields.io/badge/API-Render-46E3B7?style=flat-square&logo=render)](https://cybergraph-api.onrender.com)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python)](https://python.org)
 [![Neo4j](https://img.shields.io/badge/Neo4j-AuraDB-008CC1?style=flat-square&logo=neo4j)](https://neo4j.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
@@ -19,7 +21,9 @@ Instead of listing isolated indicators, CyberGraph helps analysts answer questio
 
 ## Live Demo
 
-Try it out: **[https://utsamzxgrv8ftukzh2rtbt.streamlit.app](https://utsamzxgrv8ftukzh2rtbt.streamlit.app)**
+- **Dashboard:** [https://utsamzxgrv8ftukzh2rtbt.streamlit.app](https://utsamzxgrv8ftukzh2rtbt.streamlit.app)
+- **REST API:** [https://cybergraph-api.onrender.com](https://cybergraph-api.onrender.com)
+- **API Documentation (Swagger):** [https://cybergraph-api.onrender.com/docs](https://cybergraph-api.onrender.com/docs)
 
 The demo is connected to a live Neo4j AuraDB instance containing **1,962 entities** and **19,482 relationships** from MITRE ATT&CK.
 
@@ -52,7 +56,9 @@ Query Layer (Cypher, GraphQueryService)
 - **Threat Actor Profiles**: Aggregated view of malware, tools, and techniques used by each actor.
 - **Graph Explorer**: N-hop neighborhood visualization with `pyvis`.
 - **Cypher Query Service**: Reusable query layer shared between API and dashboard.
-- **Cloud-Deployed**: Live demo on Streamlit Community Cloud.
+- **REST API**: FastAPI backend with Swagger documentation.
+- **Cloud-Deployed**: Dashboard on Streamlit Cloud, API on Render.
+- **CI/CD**: GitHub Actions pipeline with automated testing.
 
 ---
 
@@ -66,9 +72,10 @@ Query Layer (Cypher, GraphQueryService)
 | Threat Intel Data | MITRE ATT&CK (STIX 2.1) |
 | Query Layer | Cypher |
 | Dashboard | Streamlit + pyvis |
-| Backend (planned) | FastAPI |
-| Testing (planned) | pytest |
+| Backend | FastAPI |
+| Testing | pytest |
 | CI/CD | GitHub Actions |
+| Deployment | Streamlit Cloud, Render |
 
 ---
 
@@ -76,6 +83,9 @@ Query Layer (Cypher, GraphQueryService)
 
 ```text
 CyberGraph/
++-- backend/
+|   +-- api/
+|       +-- main.py     # FastAPI application
 +-- dashboard/          # Streamlit UI
 |   +-- app.py
 +-- src/cybergraph/
@@ -88,6 +98,7 @@ CyberGraph/
 +-- scripts/            # Utility scripts
 |   +-- download_data.py
 +-- tests/              # pytest test suite
++-- .github/workflows/  # CI/CD pipelines
 +-- requirements.txt
 +-- pyproject.toml
 +-- README.md
@@ -115,7 +126,7 @@ python scripts/download_data.py
 
 Create a Neo4j AuraDB Free instance at [console.neo4j.io](https://console.neo4j.io).
 
-Create a `.streamlit/secrets.toml` file:
+Create a `.streamlit/secrets.toml` file (for the dashboard) and a `.env` file (for the API):
 
 ```toml
 NEO4J_URI = "neo4j+s://<your-instance>.databases.neo4j.io"
@@ -129,6 +140,12 @@ NEO4J_PASSWORD = "<your-password>"
 streamlit run dashboard/app.py
 ```
 
+### 5. Run API
+
+```bash
+uvicorn backend.api.main:app --reload
+```
+
 ---
 
 ## Roadmap
@@ -137,8 +154,8 @@ streamlit run dashboard/app.py
 - [x] Neo4j knowledge graph construction
 - [x] Cypher query service
 - [x] Streamlit dashboard (search, profiles, graph explorer)
-- [ ] FastAPI REST backend
-- [ ] Automated tests + CI/CD
+- [x] FastAPI REST backend
+- [x] Automated tests + CI/CD
 - [ ] NLP-based entity extraction from threat reports
 - [ ] Graph embeddings and link prediction
 - [ ] React frontend (production UI)
@@ -163,4 +180,8 @@ streamlit run dashboard/app.py
 - [MITRE ATT&CK](https://attack.mitre.org/) for the STIX 2.1 dataset.
 - [Neo4j](https://neo4j.com/) for AuraDB Free tier.
 - [Streamlit](https://streamlit.io/) for the community cloud hosting.
+- [Render](https://render.com/) for the free API hosting.
 ```
+
+### Sıradaki Adım
+Bunu GitHub'a kaydettikten sonra, projenin hem arayüzü hem de API'si canlı ve README'de görünür durumda olacak. Bir sonraki adımda **Docker** ekleyerek projeyi tamamen taşınabilir hale getirebiliriz (ki bu, büyük şirketlerin altyapı ekipleri için çok önemli bir kriterdir). Hazır olduğunda bana "Docker'a geçelim" yazabilirsin.
