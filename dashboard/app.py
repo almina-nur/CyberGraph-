@@ -2,9 +2,6 @@
 
 Calistirma:
     streamlit run dashboard/app.py
-
-Streamlit Cloud'da deploy edildiginde NEO4J_URI, NEO4J_USER,
-NEO4J_PASSWORD ortam degiskenleri (secrets.toml) tanimli olmalidir.
 """
 
 import os
@@ -14,14 +11,13 @@ from pathlib import Path
 import streamlit as st
 from pyvis.network import Network
 
-# src/ paketini import edilebilir yap
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 
+from cybergraph.extraction.extractor import ThreatTextExtractor
+from cybergraph.intelligence.investigation import ThreatInvestigationService
 from cybergraph.intelligence.queries import GraphQueryService
 
-
-# ----- Baglanti -----
 
 @st.cache_resource
 def get_service() -> GraphQueryService:
@@ -46,7 +42,17 @@ def get_service() -> GraphQueryService:
     return GraphQueryService(uri, user, password)
 
 
-# ----- Yardimcilar -----
+@st.cache_resource
+def get_extractor() -> ThreatTextExtractor:
+    """Yerel STIX ornek verisi varsa sozluk cikariciyi yukler."""
+    for candidate in (
+        ROOT / "data/samples/attack_entities.json",
+        ROOT / "data/samples/enterprise-attack.json",
+    ):
+        if candidate.exists():
+            return ThreatTextExtractor.from_attack_json(candidate)
+    return ThreatTextExtractor()
+
 
 TYPE_COLORS = {
     "intrusion-set": "#e74c3c",
@@ -74,11 +80,8 @@ def render_graph(neighborhood: dict, height: int = 600) -> str:
     for edge in neighborhood["edges"]:
         net.add_edge(edge["source"], edge["target"], title=edge["type"])
 
-    # HTML'i string olarak dondur
     return net.generate_html()
 
-
-# ----- Sayfa -----
 
 st.set_page_config(page_title="CyberGraph", page_icon="shield", layout="wide")
 st.title("CyberGraph")
@@ -94,11 +97,10 @@ col3.metric("Status", health["status"])
 
 st.divider()
 
-tab_search, tab_actor, tab_graph = st.tabs(
-    ["Search", "Threat Actor Profile", "Graph Explorer"]
+tab_search, tab_actor, tab_graph, tab_investigate = st.tabs(
+    ["Search", "Threat Actor Profile", "Graph Explorer", "Text Investigation"]
 )
 
-# --- TAB 1: Arama ---
 with tab_search:
     st.subheader("Search entities")
     query = st.text_input(
@@ -116,7 +118,6 @@ with tab_search:
                         st.write(e.description)
                     st.caption(f"Type: {e.type} | External ID: {e.external_id}")
 
-# --- TAB 2: Aktor Profili ---
 with tab_actor:
     st.subheader("Threat actor profile")
     actor_key = st.text_input("Actor key (e.g. G0016 for APT29)", value="G0016")
@@ -140,7 +141,6 @@ with tab_actor:
                     for c in profile["attributed_campaigns"]:
                         st.write(f"- {c['name']} ({c['key']})")
 
-# --- TAB 3: Graf Gezgini ---
 with tab_graph:
     st.subheader("Graph explorer")
     st.caption("Pick an entity and see its neighborhood up to N hops.")
@@ -156,11 +156,47 @@ with tab_graph:
             except Exception as exc:
                 st.error(f"Query failed: {exc}")
             else:
-                st.caption(
-                    f"{len(nb['nodes'])} nodes, {len(nb['edges'])} edges"
-                )
+                st.caption(f"{len(nb['nodes'])} nodes, {len(nb['edges'])} edges")
                 if nb["nodes"]:
                     html = render_graph(nb)
                     st.components.v1.html(html, height=650, scrolling=True)
                 else:
                     st.info("No neighborhood found.")
+
+with tab_investigate:
+    st.subheader("Text investigation & graph linking")
+    st.caption("Extract IOCs/CVEs and ATT&CK entities from a report, then inspect linked graph context.")
+
+    default_text = (
+        "APT29 used Cobalt Strike and PowerShell while communicating with "
+        "hxxp://malicious-domain[.]example[.]com and 185.220.101.4 (CVE-2023-23397)."
+    )
+    report_text = st.text_area("Threat report / analyst note", value=default_text, height=130)
+
+    if st.button("Investigate Text") and report_text.strip():
+        inv_service = ThreatInvestigationService(extractor=get_extractor(), query_service=svc)
+        report = inv_service.investigate_text(report_text)
+
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Indicators / CVEs", report.summary["indicator_count"])
+        m2.metric("Linked Graph Entities", report.summary["linked_entity_count"])
+        m3.metric("Unmatched Mentions", report.summary["unmatched_mention_count"])
+
+        st.markdown("#### Extracted Indicators & Vulnerabilities")
+        if report.indicators:
+            for ind in report.indicators:
+                st.write(f"- **{ind.entity_type}**: `{ind.normalized_value}` (confidence: {ind.confidence})")
+        else:
+            st.info("No indicators or CVEs extracted.")
+
+        st.markdown("#### Linked ATT&CK Entities in Graph")
+        if report.linked_entities:
+            for item in report.linked_entities:
+                with st.expander(
+                    f"{item.name} ({item.key}) - {item.entity_type} | outgoing: {item.outgoing_count}"
+                ):
+                    st.caption(f"Matched text: `{item.matched_text}`")
+                    if item.sample_targets:
+                        st.write("Sample outgoing relations:", ", ".join(item.sample_targets))
+        else:
+            st.info("No ATT&CK entities linked in graph.")
