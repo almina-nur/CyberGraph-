@@ -1,0 +1,45 @@
+{
+  "benchmark_cases": 2,
+  "mean_precision": 1.0,
+  "mean_recall": 1.0,
+  "mean_f1": 1.0,
+  "sample_top3": {
+    "precision_at_k": 0.6667,
+    "recall_at_k": 1.0,
+    "f1_at_k": 0.8
+  },
+  "cases": [
+    {
+      "id": "case_01",
+      "predicted_keys": [
+        "S0154",
+        "T1059.001",
+        "G0016"
+      ],
+      "expected_keys": [
+        "G0016",
+        "S0154",
+        "T1059.001"
+      ],
+      "indicator_count": 3,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    {
+      "id": "case_02",
+      "predicted_keys": [
+        "S0521",
+        "S0552"
+      ],
+      "expected_keys": [
+        "S0521",
+        "S0552"
+      ],
+      "indicator_count": 1,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    }
+  ]
+}
