@@ -83,6 +83,25 @@ def render_graph(neighborhood: dict, height: int = 600) -> str:
     return net.generate_html()
 
 
+def merge_neighborhoods(query_svc: GraphQueryService, keys: list[str], depth: int = 1, max_nodes: int = 40) -> dict:
+    """Birden fazla eslesen dugumun komsuluk altgraflarini birlestirir."""
+    merged_nodes: dict[str, dict] = {}
+    merged_edges: list[dict] = []
+    seen_edges: set[tuple] = set()
+
+    for key in keys:
+        nb = query_svc.get_neighborhood(key, depth=depth, max_nodes=max_nodes)
+        for node in nb.get("nodes", []):
+            merged_nodes[node["key"]] = node
+        for edge in nb.get("edges", []):
+            ekey = (edge["source"], edge["target"], edge["type"])
+            if ekey not in seen_edges:
+                seen_edges.add(ekey)
+                merged_edges.append(edge)
+
+    return {"nodes": list(merged_nodes.values()), "edges": merged_edges}
+
+
 st.set_page_config(page_title="CyberGraph", page_icon="shield", layout="wide")
 st.title("CyberGraph")
 st.caption("AI-Driven Cyber Threat Intelligence and Knowledge Graph Platform")
@@ -172,6 +191,7 @@ with tab_investigate:
         "hxxp://malicious-domain[.]example[.]com and 185.220.101.4 (CVE-2023-23397)."
     )
     report_text = st.text_area("Threat report / analyst note", value=default_text, height=130)
+    show_subgraph = st.checkbox("Render combined neighborhood graph for linked entities", value=True)
 
     if st.button("Investigate Text") and report_text.strip():
         inv_service = ThreatInvestigationService(extractor=get_extractor(), query_service=svc)
@@ -198,5 +218,14 @@ with tab_investigate:
                     st.caption(f"Matched text: `{item.matched_text}`")
                     if item.sample_targets:
                         st.write("Sample outgoing relations:", ", ".join(item.sample_targets))
+
+            if show_subgraph:
+                st.markdown("#### Linked Neighborhood Graph")
+                linked_keys = [le.key for le in report.linked_entities]
+                combined_nb = merge_neighborhoods(svc, linked_keys, depth=1, max_nodes=35)
+                if combined_nb["nodes"]:
+                    st.caption(f"{len(combined_nb['nodes'])} nodes, {len(combined_nb['edges'])} edges")
+                    html = render_graph(combined_nb, height=520)
+                    st.components.v1.html(html, height=550, scrolling=True)
         else:
             st.info("No ATT&CK entities linked in graph.")
