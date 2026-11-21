@@ -79,9 +79,29 @@ class ThreatTextExtractor:
                 if isinstance(vals, list):
                     names.extend(str(v) for v in vals if v)
 
+            noisy_single_tokens = {
+                "tool",
+                "net",
+                "web",
+                "app",
+                "file",
+                "data",
+                "user",
+                "admin",
+                "scan",
+                "test",
+                "agent",
+                "service",
+                "system",
+                "shell",
+            }
             for raw_name in names:
-                norm = raw_name.strip().lower()
-                if len(norm) >= 3 and norm not in aliases:
+                norm = " ".join(raw_name.strip().lower().split())
+                if len(norm) < 4:
+                    continue
+                if " " not in norm and norm in noisy_single_tokens:
+                    continue
+                if norm not in aliases:
                     aliases[norm] = (ext_id, obj_type)
 
         return cls(attack_aliases=aliases)

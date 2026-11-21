@@ -1,8 +1,8 @@
 {
   "benchmark_cases": 4,
-  "mean_precision": 0.6875,
+  "mean_precision": 0.75,
   "mean_recall": 0.75,
-  "mean_f1": 0.7143,
+  "mean_f1": 0.75,
   "sample_top3": {
     "precision_at_k": 0.6667,
     "recall_at_k": 1.0,
@@ -52,8 +52,7 @@
       "predicted_keys": [
         "T1105",
         "T1003.004",
-        "G0016",
-        "T1588.002"
+        "G0016"
       ],
       "expected_keys": [
         "G0016",
@@ -62,21 +61,19 @@
       ],
       "indicator_count": 0,
       "true_positives": 3,
-      "false_positives": 1,
+      "false_positives": 0,
       "false_negatives": 0,
-      "precision": 0.75,
+      "precision": 1.0,
       "recall": 1.0,
-      "f1": 0.8571
+      "f1": 1.0
     },
     {
       "id": "case_04_ioc_only_no_attack_entity",
-      "predicted_keys": [
-        "S0039"
-      ],
+      "predicted_keys": [],
       "expected_keys": [],
       "indicator_count": 4,
       "true_positives": 0,
-      "false_positives": 1,
+      "false_positives": 0,
       "false_negatives": 0,
       "precision": 0.0,
       "recall": 0.0,
