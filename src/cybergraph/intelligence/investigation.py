@@ -61,6 +61,7 @@ class ThreatInvestigationService:
         return None
 
     def _resolve_source_type(self, rel, seen_sources: dict[str, Optional[str]]) -> Optional[str]:
+        """Gelen iliskide kaynak dugumun tipini guvenli sekilde cozumler."""
         direct_type = getattr(rel, "source_type", None)
         if direct_type:
             return direct_type
@@ -79,6 +80,7 @@ class ThreatInvestigationService:
         return seen_sources[src_key]
 
     def _build_chain_for_indicator(self, indicator: ExtractedEntity) -> Optional[ChainHopSummary]:
+        """Bir IOC dugumunden zararli yazilim, aktor ve teknik zincirini cikarir."""
         ioc_node = self._find_matching_ioc_node(indicator)
         if not ioc_node:
             return None
@@ -97,17 +99,11 @@ class ThreatInvestigationService:
         seen_sources: dict[str, Optional[str]] = {}
         for m_key in malware_keys[:5]:
             for inc in self.query_service.get_incoming_relationships(m_key, limit=25):
-                src_type = getattr(inc, "source_type", None)
-                if src_type is None and inc.source_key:
-                    if inc.source_key not in seen_sources:
-                        src_ent = self.query_service.get_entity(inc.source_key)
-                        seen_sources[inc.source_key] = getattr(src_ent, "type", None) if src_ent else None
-                    src_type = seen_sources[inc.source_key]
-
-                if src_type == "intrusion-set":
+                if self._resolve_source_type(inc, seen_sources) == "intrusion-set":
                     label = f"{inc.source_name} ({inc.source_key})"
                     if label not in actor_labels:
                         actor_labels.append(label)
+
             for out in self.query_service.get_outgoing_relationships(m_key, limit=25):
                 if out.target_type == "attack-pattern":
                     label = f"{out.target_name} ({out.target_key})"
@@ -124,6 +120,7 @@ class ThreatInvestigationService:
         )
 
     def investigate_text(self, text: str, max_neighbors_per_entity: int = 10) -> InvestigationReport:
+        """Metindeki IOC ve ATT&CK varliklarini cikarir ve grafikle iliskilendirir."""
         extracted = self.extractor.extract_all(text)
         indicators = extracted["indicators"]
         attack_mentions = extracted["attack_entities"]

@@ -48,17 +48,6 @@ def test_investigate_text_links_graph_entities():
             source="mitre-attack",
         )
     ]
-    query_svc.get_entity.side_effect = lambda key: (
-        EntityResult(
-            key="G0016",
-            name="APT29",
-            type="intrusion-set",
-            description="Sample actor",
-            external_id="G0016",
-        )
-        if key == "G0016"
-        else None
-    )
     query_svc.get_incoming_relationships.return_value = []
     query_svc.search_entities.return_value = []
 
@@ -96,6 +85,13 @@ def test_investigate_text_traces_ioc_chain():
             external_id="IOC-DOM-001",
         )
     ]
+    query_svc.get_entity.return_value = EntityResult(
+        key="G0016",
+        name="APT29",
+        type="intrusion-set",
+        description="Sample actor",
+        external_id="G0016",
+    )
     query_svc.get_outgoing_relationships.side_effect = [
         [
             RelationshipResult(
