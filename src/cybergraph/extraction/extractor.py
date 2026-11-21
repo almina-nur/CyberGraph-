@@ -106,7 +106,7 @@ class ThreatTextExtractor:
                 found.append(
                     ExtractedEntity(
                         text=raw,
-                        normalized_value=norm.lower() if etype != "cve" else norm.upper(),
+                        normalized_value=norm.upper() if etype == "vulnerability" else norm.lower(),
                         entity_type=etype,
                         matched_key=None,
                         source="regex-ioc-extractor",
