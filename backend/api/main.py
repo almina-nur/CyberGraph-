@@ -92,11 +92,21 @@ class LinkedEntityItem(BaseModel):
     sample_targets: list[str]
 
 
+class ChainSummaryItem(BaseModel):
+    anchor_key: str
+    anchor_name: str
+    anchor_type: str
+    related_malware: list[str] = []
+    related_actors: list[str] = []
+    related_techniques: list[str] = []
+
+
 class InvestigateResponse(BaseModel):
     summary: dict
     indicators: list[ExtractedIndicatorItem]
     linked_entities: list[LinkedEntityItem]
     unmatched_attack_mentions: list[str]
+    chain_summaries: list[ChainSummaryItem] = []
 
 
 @app.get("/health", response_model=HealthResponse, tags=["System"])
@@ -191,5 +201,16 @@ def investigate_report(
         ],
         unmatched_attack_mentions=[
             m.normalized_value for m in report.unmatched_attack_mentions
+        ],
+        chain_summaries=[
+            ChainSummaryItem(
+                anchor_key=c.anchor_key,
+                anchor_name=c.anchor_name,
+                anchor_type=c.anchor_type,
+                related_malware=list(getattr(c, "related_malware", [])),
+                related_actors=list(getattr(c, "related_actors", [])),
+                related_techniques=list(getattr(c, "related_techniques", [])),
+            )
+            for c in getattr(report, "chain_summaries", [])
         ],
     )
