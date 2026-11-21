@@ -23,13 +23,26 @@ class LinkedAttackNode:
 
 
 @dataclass
+class ChainHopSummary:
+    """Bir gosterge veya varliktan yola cikarak bulunan cok adimli iliski ozeti."""
+
+    anchor_key: str
+    anchor_name: str
+    anchor_type: str
+    related_malware: list[str] = field(default_factory=list)
+    related_actors: list[str] = field(default_factory=list)
+    related_techniques: list[str] = field(default_factory=list)
+
+
+@dataclass
 class InvestigationReport:
     """Bir tehdit metni icin cikarim ve grafik baglantisi ozeti."""
 
     indicators: list[ExtractedEntity]
     linked_entities: list[LinkedAttackNode]
     unmatched_attack_mentions: list[ExtractedEntity]
-    summary: dict
+    chain_summaries: list[ChainHopSummary] = field(default_factory=list)
+    summary: dict = field(default_factory=dict)
 
 
 class ThreatInvestigationService:
@@ -39,6 +52,51 @@ class ThreatInvestigationService:
         self.extractor = extractor
         self.query_service = query_service
 
+    def _find_matching_ioc_node(self, indicator: ExtractedEntity):
+        """Normalize edilmis IOC degerine karsilik gelen grafik dugumunu arar."""
+        candidates = self.query_service.search_entities(indicator.normalized_value, limit=5)
+        for item in candidates:
+            if item.type == "indicator" and (item.name or "").lower() == indicator.normalized_value.lower():
+                return item
+        return None
+
+    def _build_chain_for_indicator(self, indicator: ExtractedEntity) -> Optional[ChainHopSummary]:
+        ioc_node = self._find_matching_ioc_node(indicator)
+        if not ioc_node:
+            return None
+
+        malware_keys: list[str] = []
+        malware_labels: list[str] = []
+        actor_labels: list[str] = []
+        technique_labels: list[str] = []
+
+        for rel in self.query_service.get_outgoing_relationships(ioc_node.key, limit=15):
+            if rel.target_type == "malware":
+                if rel.target_key not in malware_keys:
+                    malware_keys.append(rel.target_key)
+                    malware_labels.append(f"{rel.target_name} ({rel.target_key})")
+
+        for m_key in malware_keys[:5]:
+            for inc in self.query_service.get_incoming_relationships(m_key, limit=25):
+                if inc.source_type == "intrusion-set":
+                    label = f"{inc.source_name} ({inc.source_key})"
+                    if label not in actor_labels:
+                        actor_labels.append(label)
+            for out in self.query_service.get_outgoing_relationships(m_key, limit=25):
+                if out.target_type == "attack-pattern":
+                    label = f"{out.target_name} ({out.target_key})"
+                    if label not in technique_labels:
+                        technique_labels.append(label)
+
+        return ChainHopSummary(
+            anchor_key=ioc_node.key,
+            anchor_name=ioc_node.name,
+            anchor_type=ioc_node.type,
+            related_malware=malware_labels[:10],
+            related_actors=actor_labels[:10],
+            related_techniques=technique_labels[:10],
+        )
+
     def investigate_text(self, text: str, max_neighbors_per_entity: int = 10) -> InvestigationReport:
         extracted = self.extractor.extract_all(text)
         indicators = extracted["indicators"]
@@ -46,6 +104,7 @@ class ThreatInvestigationService:
 
         linked: list[LinkedAttackNode] = []
         unmatched: list[ExtractedEntity] = []
+        chain_summaries: list[ChainHopSummary] = []
         seen_keys: set[str] = set()
 
         for mention in attack_mentions:
@@ -82,15 +141,22 @@ class ThreatInvestigationService:
                 )
             )
 
+        for ind in indicators:
+            chain = self._build_chain_for_indicator(ind)
+            if chain is not None:
+                chain_summaries.append(chain)
+
         summary = {
             "indicator_count": len(indicators),
             "linked_entity_count": len(linked),
             "unmatched_mention_count": len(unmatched),
+            "chain_summary_count": len(chain_summaries),
         }
 
         return InvestigationReport(
             indicators=indicators,
             linked_entities=linked,
             unmatched_attack_mentions=unmatched,
+            chain_summaries=chain_summaries,
             summary=summary,
         )
