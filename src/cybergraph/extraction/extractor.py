@@ -41,9 +41,12 @@ def defang_text(text: str) -> str:
     """Guvenlik raporlarindaki defanged IOC ifadelerini standart bicime cevirir."""
     cleaned = text
     cleaned = re.sub(r"""\[\.\]|\(\s*\.\s*\)""", ".", cleaned)
-    cleaned = re.sub(r"""^hxxp""", "http", cleaned, flags=re.IGNORECASE)
-    cleaned = cleaned.replace("hxxp://", "http://").replace("hxxps://", "https://")
-    return cleaned
+    return re.sub(
+        r"\bhxxp(s?)://",
+        lambda match: f"http{match.group(1).lower()}://",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
 
 
 class ThreatTextExtractor:

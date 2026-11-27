@@ -6,6 +6,11 @@ def test_defang_text():
     assert defang_text(raw) == "http://evil.example.com/payload"
 
 
+def test_defang_uppercase_scheme_in_sentence():
+    raw = "Source: HXXPS://example[.]org/path"
+    assert defang_text(raw) == "Source: https://example.org/path"
+
+
 def test_extract_indicators_and_cve():
     extractor = ThreatTextExtractor()
     text = (
